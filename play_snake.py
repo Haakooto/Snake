@@ -44,7 +44,8 @@ orchard = Orchard(ax)
 snake = Snake(ax, orchard, color="b")
 if len(sys.argv) > 1:
     serpent = Snake(ax, orchard, color="g")
-serpent = Snake(ax, orchard, dead=True)
+else:
+    serpent = Snake(ax, orchard, dead=True)
 
 plt.subplots_adjust(left=0.01,
                     bottom=0.01,
