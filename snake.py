@@ -83,6 +83,7 @@ class Joint(Rectangle):
         # add to axis, so mpl will know to update position when redrawing
         ax.add_artist(self)
         self.next = None
+        self.prev = None
         self.set_xy(pos)
         self.ishead = head
         self.idx = idx
@@ -112,6 +113,26 @@ class Joint(Rectangle):
         self.set_xy(new)
         return crash
 
+    def flip(self):
+        old = self  # head
+        this = old.next
+
+        old.ishead = False
+        old.prev = old.next
+        old.next = None
+        while this.next is not None:
+            this.prev = this.next
+            this.next = old
+            old = this
+            this = this.prev
+
+        this.ishead = True
+        this.next = old
+        this.prev = None
+
+        Joint.head_pos[self.idx] = this.xy
+        return this, this.xy, np.sign(np.asarray(this.xy) - np.asarray(old.xy))
+
 
 class Snake:
     box = []
@@ -131,7 +152,7 @@ class Snake:
             self.direction = np.asarray([1, 0]) * np.sign(np.random.normal())
             np.random.shuffle(self.direction)
 
-            self.wait = 0.5
+            self.wait = 0.3
             self.dw = 0.001
             self.speed = 0.1
             self.gridsize = self.speed * 0.5
@@ -193,21 +214,28 @@ class Snake:
         while last.next is not None:
             last = last.next
         last.next = new  # set aslast joint
+        new.prev = last
         # first time moving, will get previous position of (now) second to last joint,
         # so appears as if added to the back, as is intended
         # if joints are later made in different colours, this will look bad
+
+    def turn(self, dir):
+        if (self.direction == -dir).all() and self.head.next is not None:
+            self.head, self.pos, self.direction = self.head.flip()
+        else:
+            self.direction = dir
 
     def kill(self):
         self.dead = True
 
     def up(self):
-        self.direction = np.asarray([0, 1])
+        self.turn(np.asarray([0, 1]))
 
     def down(self):
-        self.direction = np.asarray([0, -1])
+        self.turn(np.asarray([0, -1]))
 
     def left(self):
-        self.direction = np.asarray([-1, 0])
+        self.turn(np.asarray([-1, 0]))
 
     def right(self):
-        self.direction = np.asarray([1, 0])
+        self.turn(np.asarray([1, 0]))
